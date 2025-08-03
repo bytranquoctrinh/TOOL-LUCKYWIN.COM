@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phân Tích Tài/Xỉu từ MD5 - LuckyWin</title>
+
+  <!-- Logo web / Favicon -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192-from-luckywin.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512-from-luckywin.png">
+  <link rel="apple-touch-icon" href="icon-192-from-luckywin.png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    :root {
+      --gradient-colors: linear-gradient(135deg, #ff5f6d, #ffc371, #24c6dc, #5433ff, #20bdff, #a8edea);
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 100%; }
+      100% { background-position: 100% 0%; }
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--gradient-colors);
+      background-size: 600% 600%;
+      animation: gradientMove 15s linear infinite;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 90%;
+      margin: 80px auto;
+      box-shadow: 0 0 25px rgba(255,255,255,0.7);
+      animation: fadeInOnce 1.2s ease;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    @keyframes fadeInOnce {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2, footer, .rainbow-text-all, input::placeholder, button span {
+      background: var(--gradient-colors);
+      background-size: 600% 600%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientMove 15s linear infinite;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(4px);
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.4);
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      color: white;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: none;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px white;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px white;
+    }
+
+    .output-box {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+      font-size: 15px;
+      animation: fadeInOnce 1s ease;
+      color: white;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .float-up {
+      position: absolute;
+      bottom: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: floatUp 3s linear forwards;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-100vh); opacity: 0; }
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Phân tích kết quả Tài/Xỉu từ mã MD5 (LuckyWin)</h2>
+    <input type="text" id="hash" placeholder="Nhập mã MD5 (32 ký tự hex)">
+    <button onclick="spawnBurstParticles(event); analyze();"><span>Dự đoán</span></button>
+    <button onclick="spawnBurstParticles(event); clearInput();"><span>Xoá</span></button>
+    <div id="out" class="output-box"></div>
+    <footer>© Bản quyền: Trần Quốc Trịnh</footer>
+  </div>
+
+  <script>
+    function modDice(val) {
+      return (parseInt(val, 16) % 6) + 1;
+    }
+
+    function analyze() {
+      const hashInput = document.getElementById("hash");
+      const hash = hashInput.value.trim().toLowerCase();
+      const out = document.getElementById("out");
+      out.innerHTML = `<div class="rainbow-text-all"> Đang phân tích...</div>`;
+
+      setTimeout(() => {
+        if (!/^[a-f0-9]{32}$/.test(hash)) {
+          out.innerHTML = '<div class="rainbow-text-all"> Chuỗi không hợp lệ. Vui lòng nhập đúng mã MD5 (32 ký tự hex).</div>';
+          return;
+        }
+
+        const segments = [
+          hash.slice(0, 6), hash.slice(6, 12),
+          hash.slice(12, 18), hash.slice(18, 24),
+          hash.slice(24, 30), hash.slice(30, 32)
+        ];
+
+        let log = `<div class="rainbow-text-all"><strong> Phân tích chuỗi MD5:</strong><br>`;
+        log += segments.map((seg, i) => `Segment ${i+1}: ${seg}`).join('<br>') + '<br><br>';
+
+        const tries = [];
+        tries.push({ label: "3 byte cuối", dice: [modDice(hash.slice(26, 28)), modDice(hash.slice(28, 30)), modDice(hash.slice(30, 32))] });
+        tries.push({ label: "3 byte đầu", dice: [modDice(hash.slice(0, 2)), modDice(hash.slice(2, 4)), modDice(hash.slice(4, 6))] });
+        tries.push({ label: "Vị trí giữa (16-22)", dice: [modDice(hash.slice(16, 18)), modDice(hash.slice(18, 20)), modDice(hash.slice(20, 22))] });
+
+        log += ' Kết quả tính xúc xắc:<br>';
+        for (const t of tries) {
+          const sum = t.dice.reduce((a, b) => a + b, 0);
+          const result = sum >= 11 ? 'TÀI' : 'XỈU';
+          log += `● ${t.label}: ${t.dice.join(' + ')} = ${sum} → <strong>${result}</strong><br>`;
+        }
+
+        log += `</div>`;
+        out.innerHTML = log;
+        hashInput.value = '';
+      }, 2000);
+    }
+
+    function clearInput() {
+      document.getElementById("hash").value = '';
+      document.getElementById("out").innerHTML = '';
+    }
+
+    function spawnBurstParticles(e) {
+      const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#8f00ff'];
+      for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        p.style.left = (e.clientX || window.innerWidth / 2) + 'px';
+        p.style.top = (e.clientY || window.innerHeight / 2) + 'px';
+        document.body.appendChild(p);
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * 100;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        p.animate([
+          { transform: 'translate(0,0)', opacity: 1 },
+          { transform: `translate(${x}px, ${y}px)`, opacity: 0 }
+        ], {
+          duration: 800,
+          easing: 'ease-out',
+          fill: 'forwards'
+        });
+        setTimeout(() => p.remove(), 1000);
+      }
+    }
+
+    function startFloatingEffect() {
+      const colors = ['#ffffff', '#ffff00', '#00ffff', '#ff00ff', '#ff6666', '#66ff66', '#6666ff'];
+      setInterval(() => {
+        for (let i = 0; i < 4; i++) {
+          const p = document.createElement('div');
+          p.className = 'float-up';
+          p.style.left = Math.random() * window.innerWidth + 'px';
+          p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          document.body.appendChild(p);
+          setTimeout(() => p.remove(), 3000);
+        }
+      }, 500);
+    }
+
+    window.onload = () => {
+      startFloatingEffect();
+    };
+  </script>
+</body>
+</html>
